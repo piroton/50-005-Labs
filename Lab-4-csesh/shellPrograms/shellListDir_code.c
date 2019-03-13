@@ -16,9 +16,11 @@ int shellListDir_code(char** args)
 {
 	struct dirent **dirList;
 	struct stat fileInfo;
-	char buffer[80];
 	int num_files = scandir(".", &dirList, filterHidden, sortFiles);
-	printf("Hello from shellListDir_code. Unfortunately, 'listdir' hasn't been implemented yet.");
+	if (num_files < 0) return -1;
+	for (int i = 0; i < num_files; i++){
+		printf("%s\n", dirList[i] -> d_name);
+	}
     return 1;
 }
 
