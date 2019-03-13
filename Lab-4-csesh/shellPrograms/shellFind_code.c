@@ -12,8 +12,20 @@
 */
 int shellFind_code(char** args)
 {
-    printf("Hello from shellFind_code. Unfortunately, 'find' hasn't been implemented yet.");
-	return 1;
+
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(".");
+    if (d)
+    {
+        while ((dir = readdir(d)) != NULL)
+        {
+            if (strstr(dir->d_name, args[1]) != NULL) {
+                printf("%s\n", dir->d_name);
+            }
+        }
+        closedir(d);
+    }
 }
 
 int main(int argc, char** args){
