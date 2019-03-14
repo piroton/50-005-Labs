@@ -171,7 +171,7 @@ int shellExecuteInput(char **args)
         else{
             return (*builtin_commandFunc[i])(args);
         }
-      
+
     }
   }
 
@@ -223,14 +223,14 @@ char **shellTokenizeInput(char *line)
   position++;
 
   while (token != NULL) {
-  	// Tokenize the rest of the inputs
+  // Tokenize the rest of the inputs
     token = strtok(NULL, SHELL_INPUT_DELIM);
     tokens[position] = token;
     position++;
 
   }
 
-  //adds NULL termination at the end 
+  //adds NULL termination at the end
   tokens[position] = NULL;
   return tokens;
 }
