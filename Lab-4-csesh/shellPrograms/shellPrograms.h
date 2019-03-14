@@ -20,6 +20,7 @@
 #include <dirent.h>
 /* limits.h defines "PATH_MAX". */
 #include <limits.h>
+#include <ftw.h>
 
 #define SHELL_BUFFERSIZE 256
 #define SHELL_INPUT_DELIM " \t\r\n\a"
@@ -31,5 +32,8 @@ Implemented functions of the shell interface
 int shellDisplayFile_code(char** args);
 int shellCountLine_code(char** args);
 int shellListDir_code(char** args);
+int filterHidden(const struct dirent *entry);
+int sortFiles(const struct dirent **a, const struct dirent **b);
 int shellListDirAll_code(char** args);
+int printName(const char * ftw_filePath, const struct stat * ptr, int flags);
 int shellFind_code(char** args);

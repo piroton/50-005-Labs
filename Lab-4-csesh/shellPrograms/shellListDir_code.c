@@ -32,8 +32,7 @@ int filterHidden(const struct dirent *entry)
 
 int sortFiles(const struct dirent **a, const struct dirent **b)
 {
-	struct stat astat, bstat;
-
+	return alphasort(a,b);
 }
 
 int main(int argc, char** args){
