@@ -14,10 +14,21 @@
  */
 int shellDisplayFile_code(char** args)
 {    
-    printf("Hello from shellDisplayFile_code. Unfortunately, 'display' hasn't been implemented yet.");
-    return 1;
+	printf("Hello from shellDisplayFile_code. Unfortunately, 'display' hasn't been implemented yet.");
+
+	char string[256];
+	FILE *filepointer;
+
+	filepointer = fopen(args[1], "r");
+	while (fgets(string, 256, filepointer) != NULL){
+		printf("%s",string);
+	}
+	fclose(filepointer);
+
+	printf("\n");
+	return 1;
 }
 
 int main(int argc, char** args){
-    return shellDisplayFile_code(args);
+	return shellDisplayFile_code(args);
 }
