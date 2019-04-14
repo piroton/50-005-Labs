@@ -10,10 +10,15 @@ public class ClientSecured {
     static String filedir = "D:/Github/50-005-Labs/prog-assignment-2/";
     static String clientPublicKeyFile = "clientpublic.der";
     static String clientPrivateKeyFile = "clientkey.der";
-    static int pubKeyPacket = 102;
-    static int sendSessionKey = 200;
-    static int requestEndPleaseReply = 202;
-
+    
+    final static int cp1Packet = 501;
+    final static int cp2Packet = 502;
+    final static int pubKeyPacket = 102;
+    final static int sendSessionKey = 200;
+    final static int requestEndPleaseReply = 202;
+    final static int fileHeaderPacket = 0;
+    final static int fileDataPacket = 1;
+    
     // PACKET SCHEMA:
     /*
     PACKET 0: TRANSFER FILE NAME
@@ -22,19 +27,19 @@ public class ClientSecured {
     PACKET 200: SEND SESSION KEY
     PACKET 202: REQ OK RESPONSE
     * */
-
-
-
+    
+    
     // Note:
     // Mode = 1 is CP-1;
     // Mode = 2 is CP-2;
+    
     final static int mode = 1;
     static RSAKeyPair clientKeys;
-    static RSAKeyPair serverKeys;
-
+    static PublicKey serverKey;
+    
     public static void main(String[] args) {
         
-        String filename = filedir+"rr.txt";
+        String filename = filedir + "rr.txt";
         if (args.length > 0) filename = args[0];
         
         String serverAddress = "localhost";
@@ -75,32 +80,40 @@ public class ClientSecured {
             // TODO: If all is well, continue; else, close socket
             
             System.out.print("Initializing File Sending Process...");
-
-            if (mode == 1){
-                System.out.println("CP-1 Mode Detected.");
+            
+            if (mode == 1) {
+                // TODO: CP-1 Style of Cryptography
+                // TODO: Reply with public key
+                // TODO: Encrypt file bytes with public key and then private key
+                // TODO: Send Encrypted bytes
+                
+                System.out.println("CP-1 Mode Detected... notifying server.");
+                toServer.writeInt(cp1Packet);
+    
+                System.out.print("Retrieving Client keys...");
                 try {
                     clientKeys = new RSAKeyPair(filedir + clientPublicKeyFile,
-                            filedir+clientPrivateKeyFile);
-                } catch (Exception e){
+                            filedir + clientPrivateKeyFile);
+                } catch (Exception e) {
                     e.printStackTrace();
                     System.out.println("Key Files not found!");
                 }
-
+                System.out.println("done.");
+                
                 PrivateKey privKey = clientKeys.getPrivateKey();
                 PublicKey pubKey = clientKeys.getPublicKey();
-
+                
                 System.out.println("Transmitting public key to Server...");
                 toServer.writeInt(pubKeyPacket);
                 byte[] bytePublicKey = pubKey.getEncoded();
                 toServer.write(bytePublicKey);
-
-
+                
+                
+            }
+            if (mode == 2){
+                System.out.println("CP-2 Mode Detected... notifying server.");
             }
             
-            // TODO: CP-1 Style of Cryptography
-            // TODO: Reply with public key
-            // TODO: Encrypt file bytes with public key and then private key
-            // TODO: Send Encrypted bytes
             
             // TODO: CP-2 Style of Cryptography
             // TODO: Generate Session Key
@@ -112,6 +125,7 @@ public class ClientSecured {
             
             // Send the filename
             toServer.writeInt(0);
+            
             toServer.writeInt(filename.getBytes().length);
             toServer.write(filename.getBytes());
             //toServer.flush();
