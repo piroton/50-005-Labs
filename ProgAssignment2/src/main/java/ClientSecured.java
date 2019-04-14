@@ -3,9 +3,28 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.net.Socket;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 public class ClientSecured {
     static String filedir = "D:/Github/50-005-Labs/prog-assignment-2/";
+    static String clientPublicKeyFile = "clientpublic.der";
+    static String clientPrivateKeyFile = "clientkey.der";
+    static int pubKeyPacket = 102;
+    static int sendSessionKey = 200;
+    static int requestEndPleaseReply = 202;
+
+    // PACKET SCHEMA:
+    /*
+    PACKET 0: TRANSFER FILE NAME
+    PACKET 1: TRANSFER FILE CHUNK
+    PACKET 102: TRANSFER PUBLIC KEY
+    PACKET 200: SEND SESSION KEY
+    PACKET 202: REQ OK RESPONSE
+    * */
+
+
+
     // Note:
     // Mode = 1 is CP-1;
     // Mode = 2 is CP-2;
@@ -55,8 +74,28 @@ public class ClientSecured {
             // TODO: Decrypt Message Digest and verify Message Digest
             // TODO: If all is well, continue; else, close socket
             
-            System.out.println("Initializing File Sending Process...");
+            System.out.print("Initializing File Sending Process...");
 
+            if (mode == 1){
+                System.out.println("CP-1 Mode Detected.");
+                try {
+                    clientKeys = new RSAKeyPair(filedir + clientPublicKeyFile,
+                            filedir+clientPrivateKeyFile);
+                } catch (Exception e){
+                    e.printStackTrace();
+                    System.out.println("Key Files not found!");
+                }
+
+                PrivateKey privKey = clientKeys.getPrivateKey();
+                PublicKey pubKey = clientKeys.getPublicKey();
+
+                System.out.println("Transmitting public key to Server...");
+                toServer.writeInt(pubKeyPacket);
+                byte[] bytePublicKey = pubKey.getEncoded();
+                toServer.write(bytePublicKey);
+
+
+            }
             
             // TODO: CP-1 Style of Cryptography
             // TODO: Reply with public key

@@ -6,9 +6,17 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class ServerSecured {
+	static String filedir = "D:/Github/50-005-Labs/prog-assignment-2/";
+	static String clientPublicKeyFile = "clientpublic.der";
+	static String clientPrivateKeyFile = "clientkey.der";
+	// Note:
+	// Mode = 1 is CP-1;
+	// Mode = 2 is CP-2;
+	static int mode;
+	static RSAKeyPair clientKeys;
+	static RSAKeyPair serverKeys;
 
 	public static void main(String[] args) {
-
     	int port = 4321;
     	if (args.length > 0) port = Integer.parseInt(args[0]);
 
