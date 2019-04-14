@@ -5,10 +5,17 @@ import java.io.FileInputStream;
 import java.net.Socket;
 
 public class ClientSecured {
-    
+    static String filedir = "D:/Github/50-005-Labs/prog-assignment-2/";
+    // Note:
+    // Mode = 1 is CP-1;
+    // Mode = 2 is CP-2;
+    final static int mode = 1;
+    static RSAKeyPair clientKeys;
+    static RSAKeyPair serverKeys;
+
     public static void main(String[] args) {
         
-        String filename = "rr.txt";
+        String filename = filedir+"rr.txt";
         if (args.length > 0) filename = args[0];
         
         String serverAddress = "localhost";
@@ -48,7 +55,8 @@ public class ClientSecured {
             // TODO: Decrypt Message Digest and verify Message Digest
             // TODO: If all is well, continue; else, close socket
             
-            System.out.println("Sending file...");
+            System.out.println("Initializing File Sending Process...");
+
             
             // TODO: CP-1 Style of Cryptography
             // TODO: Reply with public key
