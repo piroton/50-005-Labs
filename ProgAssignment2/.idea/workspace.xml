@@ -2,10 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="aee23f26-e3e4-414e-b313-9fac90376445" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/../.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/ClientSecured.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ClientSecured.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/RSAKeyPair.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/RSAKeyPair.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/ServerSecured.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/ServerSecured.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -43,8 +39,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/src/main/java/ClientSecured.java">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="380">
-                  <caret line="167" column="56" lean-forward="true" selection-start-line="167" selection-start-column="56" selection-end-line="167" selection-end-column="56" />
+                <state relative-caret-position="395">
+                  <caret line="168" column="12" lean-forward="true" selection-start-line="168" selection-start-column="12" selection-end-line="168" selection-end-column="12" />
                 </state>
               </provider>
             </entry>
@@ -56,8 +52,8 @@
           <file pinned="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/src/main/java/ServerSecured.java">
               <provider selected="true" editor-type-id="text-editor">
-                <state relative-caret-position="195">
-                  <caret line="21" column="44" lean-forward="true" selection-start-line="21" selection-start-column="44" selection-end-line="21" selection-end-column="44" />
+                <state relative-caret-position="771">
+                  <caret line="135" column="14" selection-start-line="135" selection-start-column="14" selection-end-line="135" selection-end-column="14" />
                 </state>
               </provider>
             </entry>
@@ -93,8 +89,8 @@
         <option value="$PROJECT_DIR$/src/main/java/CP2Encryption.java" />
         <option value="$PROJECT_DIR$/src/main/java/XSSFixed.java" />
         <option value="$PROJECT_DIR$/src/main/java/RSAKeyPair.java" />
-        <option value="$PROJECT_DIR$/src/main/java/ServerSecured.java" />
         <option value="$PROJECT_DIR$/src/main/java/ClientSecured.java" />
+        <option value="$PROJECT_DIR$/src/main/java/ServerSecured.java" />
       </list>
     </option>
   </component>
@@ -146,7 +142,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1555406000100" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1555406324396" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="project.structure.last.edited" value="Project" />
     <property name="project.structure.proportion" value="0.0" />
@@ -319,17 +315,17 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/ServerSecured.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/ClientSecured.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="21" column="44" lean-forward="true" selection-start-line="21" selection-start-column="44" selection-end-line="21" selection-end-column="44" />
+        <state relative-caret-position="395">
+          <caret line="168" column="12" lean-forward="true" selection-start-line="168" selection-start-column="12" selection-end-line="168" selection-end-column="12" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/ClientSecured.java">
+    <entry file="file://$PROJECT_DIR$/src/main/java/ServerSecured.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="380">
-          <caret line="167" column="56" lean-forward="true" selection-start-line="167" selection-start-column="56" selection-end-line="167" selection-end-column="56" />
+        <state relative-caret-position="771">
+          <caret line="135" column="14" selection-start-line="135" selection-start-column="14" selection-end-line="135" selection-end-column="14" />
         </state>
       </provider>
     </entry>

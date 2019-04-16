@@ -132,4 +132,8 @@ public class ServerSecured {
         
     }
     
+    static byte[] decryptChunk(byte[] encrypted){
+        //TODO
+    }
+    
 }
