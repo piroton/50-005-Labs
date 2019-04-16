@@ -3,6 +3,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.net.Socket;
+import java.security.Key;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
@@ -11,31 +13,36 @@ public class ClientSecured {
     static String clientPublicKeyFile = "clientpublic.der";
     static String clientPrivateKeyFile = "clientkey.der";
     
-    final static int cp1Packet = 501;
-    final static int cp2Packet = 502;
-    final static int pubKeyPacket = 102;
-    final static int sendSessionKey = 200;
-    final static int requestEndPleaseReply = 202;
-    final static int fileHeaderPacket = 0;
-    final static int fileDataPacket = 1;
+    final static int CP_1_PACKET = 501;
+    final static int CP_2_PACKET = 502;
+    final static int FILE_HEADER_PACKET = 0;
+    final static int FILE_DATA_PACKET = 1;
+    final static int FILE_DIGEST_PACKET = 2;
+    final static int PUB_KEY_PACKET = 102;
+    final static int SEND_SESSION_KEY = 200;
+    final static int OK_PACKET = 80;
+    
     
     // PACKET SCHEMA:
     /*
-    PACKET 0: TRANSFER FILE NAME
-    PACKET 1: TRANSFER FILE CHUNK
-    PACKET 102: TRANSFER PUBLIC KEY
-    PACKET 200: SEND SESSION KEY
-    PACKET 202: REQ OK RESPONSE
-    * */
+    0: TRANSFER FILE NAME
+    1: TRANSFER FILE CHUNK
+    2: TRANSFER DIGEST
+    102: TRANSFER PUBLIC KEY
+    200: SEND SESSION KEY
+    501: SET MODE TO CP-1
+    502: SET MODE TO CP-2
+    */
     
     
-    // Note:
     // Mode = 1 is CP-1;
     // Mode = 2 is CP-2;
     
-    final static int mode = 1;
+    private final static int MODE = 1;
     static RSAKeyPair clientKeys;
     static PublicKey serverKey;
+    static Key sessionKey;
+    static byte[] filebytes;
     
     public static void main(String[] args) {
         
@@ -81,21 +88,21 @@ public class ClientSecured {
             
             System.out.print("Initializing File Sending Process...");
             
-            if (mode == 1) {
-                // TODO: CP-1 Style of Cryptography
-                // TODO: Reply with public key
+            if (MODE == 1) {
+                // DONE: CP-1 Style of Cryptography
+                // DONE: Reply with public key
                 // TODO: Encrypt file bytes with public key and then private key
                 // TODO: Send Encrypted bytes
                 
                 System.out.println("CP-1 Mode Detected... notifying server.");
-                toServer.writeInt(cp1Packet);
+                toServer.writeInt(CP_1_PACKET);
     
                 System.out.print("Retrieving Client keys...");
                 try {
                     clientKeys = new RSAKeyPair(filedir + clientPublicKeyFile,
                             filedir + clientPrivateKeyFile);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    // e.printStackTrace();
                     System.out.println("Key Files not found!");
                 }
                 System.out.println("done.");
@@ -104,16 +111,14 @@ public class ClientSecured {
                 PublicKey pubKey = clientKeys.getPublicKey();
                 
                 System.out.println("Transmitting public key to Server...");
-                toServer.writeInt(pubKeyPacket);
+                toServer.writeInt(PUB_KEY_PACKET);
                 byte[] bytePublicKey = pubKey.getEncoded();
                 toServer.write(bytePublicKey);
-                
-                
             }
-            if (mode == 2){
+            if (MODE == 2){
                 System.out.println("CP-2 Mode Detected... notifying server.");
+                toServer.writeInt(CP_2_PACKET);
             }
-            
             
             // TODO: CP-2 Style of Cryptography
             // TODO: Generate Session Key
@@ -123,11 +128,9 @@ public class ClientSecured {
             // TODO: Decrypt Confirmation with AES key, confirm message
             // TODO: Encrypt bytes with session key
             
+            System.out.print("Sending File now..");
             // Send the filename
-            toServer.writeInt(0);
-            
-            toServer.writeInt(filename.getBytes().length);
-            toServer.write(filename.getBytes());
+            sendChunk(filename.getBytes(), toServer, FILE_HEADER_PACKET);
             //toServer.flush();
             
             // Open the file
@@ -135,20 +138,32 @@ public class ClientSecured {
             bufferedFileInputStream = new BufferedInputStream(fileInputStream);
             
             byte[] fromFileBuffer = new byte[117];
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
             
             // Send the file
             for (boolean fileEnded = false; !fileEnded; ) {
                 numBytes = bufferedFileInputStream.read(fromFileBuffer);
+                md.update(fromFileBuffer);
                 fileEnded = numBytes < 117;
-                
-                toServer.writeInt(1);
-                toServer.writeInt(numBytes);
-                toServer.write(fromFileBuffer);
+                sendChunk(fromFileBuffer, toServer, FILE_DATA_PACKET);
                 toServer.flush();
+                System.out.print(".");
             }
             
-            bufferedFileInputStream.close();
-            fileInputStream.close();
+            System.out.println("done.");
+            System.out.print("Sending Digest to Verify.");
+            
+            // Send Digest to Check
+            byte[] digest = md.digest();
+            sendChunk(digest, toServer, FILE_DIGEST_PACKET);
+            
+            int reply = fromServer.readInt();
+            if (reply == OK_PACKET){
+                System.out.println("Success.");
+                bufferedFileInputStream.close();
+                fileInputStream.close();
+            }
+            System.out.println();
             
             System.out.println("Closing connection...");
             
@@ -158,5 +173,22 @@ public class ClientSecured {
         
         long timeTaken = System.nanoTime() - timeStarted;
         System.out.println("Program took: " + timeTaken / 1000000.0 + "ms to run");
+    }
+    
+    static void sendChunk(byte[] bytes, DataOutputStream toServer, int packet_type) throws Exception{
+        toServer.writeInt(packet_type);
+        byte[] privateEncoded, bytesEncrypted;
+        // CP-1
+        if (MODE == 1){
+            privateEncoded = clientKeys.encryptPrivate(bytes);
+            bytesEncrypted = clientKeys.encryptExternalRSA(privateEncoded, serverKey);
+        }
+        if (MODE == 2){
+            // TODO
+            
+        }
+        
+        toServer.writeInt(bytesEncrypted.length);
+        toServer.write(bytesEncrypted);
     }
 }

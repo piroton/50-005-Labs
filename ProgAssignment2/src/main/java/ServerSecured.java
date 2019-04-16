@@ -13,21 +13,21 @@ public class ServerSecured {
     static String serverPublicKeyFile = "example.org.public.der";
     static String serverPrivateKeyFile = "example.org.private.der";
     
-    final static int cp1Packet = 501;
-    final static int cp2Packet = 502;
-    final static int pubKeyPacket = 102;
-    final static int sendSessionKey = 200;
-    final static int requestEndPleaseReply = 202;
-    final static int fileHeaderPacket = 0;
-    final static int fileDataPacket = 1;
+    final static int CP_1_PACKET = 501;
+    final static int CP_2_PACKET = 502;
+    final static int FILE_HEADER_PACKET = 0;
+    final static int FILE_DATA_PACKET = 1;
+    final static int FILE_DIGEST_PACKET = 2;
+    final static int PUB_KEY_PACKET = 102;
+    final static int SEND_SESSION_KEY = 200;
     
     // Note:
     // Mode = 1 is CP-1;
     // Mode = 2 is CP-2;
-    static int mode;
-    static boolean modeHasBeenSet = false;
-    static PublicKey clientKey;
-    static RSAKeyPair serverKeys;
+    private static int mode;
+    private static boolean modeHasBeenSet = false;
+    private static PublicKey clientKey;
+    private static RSAKeyPair serverKeys;
     
     public static void main(String[] args) {
         System.out.println("Starting up Server...");
@@ -35,8 +35,10 @@ public class ServerSecured {
         try {
             serverKeys = new RSAKeyPair(filedir+serverPublicKeyFile, filedir+serverPrivateKeyFile);
         } catch (Exception e){
-            e.printStackTrace();
+            System.out.println("Keys not found!");
+//            e.printStackTrace();
         }
+        System.out.println("done.");
         
         
         int port = 4321;
@@ -64,22 +66,22 @@ public class ServerSecured {
                 // TODO: Reply with Nonce and Encrypted Identity
                 // TODO: Read Request for Signed Certificate, Encrypt Digest of Cert
                 
-                // set mode of cryptography for uploading
-                if (packetType == cp1Packet && !modeHasBeenSet) {
+                // set MODE of cryptography for uploading
+                if (packetType == CP_1_PACKET && !modeHasBeenSet) {
                     modeHasBeenSet = true;
                     mode = 1;
                 }
-                if (packetType == cp2Packet && !modeHasBeenSet) {
+                if (packetType == CP_2_PACKET && !modeHasBeenSet) {
                     modeHasBeenSet = true;
                     mode = 2;
                 }
                 
-                if (packetType == pubKeyPacket) {
+                // Inbound Public Key Packet
+                if (packetType == PUB_KEY_PACKET) {
                     System.out.print("Receiving public key from client...");
                     byte[] clientPublicKeyBytes = new byte[128];
                     fromClient.readFully(clientPublicKeyBytes);
                     
-                    // reconstruct key from spec
                     KeyFactory pubkf = KeyFactory.getInstance("RSA");
                     X509EncodedKeySpec clientKeySpec = new X509EncodedKeySpec(clientPublicKeyBytes);
                     clientKey = pubkf.generatePublic(clientKeySpec);
