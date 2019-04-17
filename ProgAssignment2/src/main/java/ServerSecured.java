@@ -25,7 +25,7 @@ public class ServerSecured {
     static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
     static String serverPublicKeyFile = "example.org.public.der";
     static String serverPrivateKeyFile = "example.org.private.der";
-    
+
     final static int CP_1_PACKET = 501;
     final static int CP_2_PACKET = 502;
     final static int FILE_HEADER_PACKET = 0;
@@ -35,7 +35,7 @@ public class ServerSecured {
     final static int SEND_SESSION_KEY = 200;
     final static int SEND_TEST_MESSAGE = 201;
     final static int OK_PACKET = 80;
-    
+
     // Note:
     // Mode = 1 is CP-1;
     // Mode = 2 is CP-2;
@@ -44,7 +44,7 @@ public class ServerSecured {
     private static PublicKey clientPublicKey;
     private static RSAKeyHelper serverKeys;
     static AESKeyHelper sessionKey;
-    
+
     public static void main(String[] args) {
         System.out.println("Starting up Server...");
         System.out.print("Retrieving Keys...");
@@ -55,33 +55,33 @@ public class ServerSecured {
 //            e.printStackTrace();
         }
         System.out.println("done.");
-        
-        
+
+
         int port = 4321;
         if (args.length > 0) port = Integer.parseInt(args[0]);
-        
+
         ServerSocket welcomeSocket = null;
         Socket connectionSocket = null;
         DataOutputStream toClient = null;
         DataInputStream fromClient = null;
-        
+
         FileOutputStream fileOutputStream = null;
         BufferedOutputStream bufferedFileOutputStream = null;
-        
+
         try {
             welcomeSocket = new ServerSocket(port);
             connectionSocket = welcomeSocket.accept();
             fromClient = new DataInputStream(connectionSocket.getInputStream());
             toClient = new DataOutputStream(connectionSocket.getOutputStream());
             MessageDigest md = MessageDigest.getInstance("MD5");
-            
+
             while (!connectionSocket.isClosed()) {
-                
+
                 int packetType = fromClient.readInt();
-                
+
                 // TODO: PART 1
-                
-                
+
+
                 // set MODE of cryptography for uploading; set helper mode.
                 if (packetType == CP_1_PACKET && !modeHasBeenSet) {
                     modeHasBeenSet = true;
@@ -92,23 +92,22 @@ public class ServerSecured {
                     MODE = 2;
                     sessionKey = new AESKeyHelper();
                 }
-                
+
                 // Inbound Public Key Packet
                 if (packetType == PUB_KEY_PACKET) {
-                    
+
                     System.out.print("Receiving public key from client...");
                     byte[] clientPublicKeyBytes = new byte[128];
                     fromClient.readFully(clientPublicKeyBytes);
-                    
+
                     KeyFactory pubkf = KeyFactory.getInstance("RSA");
                     X509EncodedKeySpec clientKeySpec = new X509EncodedKeySpec(clientPublicKeyBytes);
                     clientPublicKey = pubkf.generatePublic(clientKeySpec);
                     System.out.println("Done.");
                 }
-                
-                // Inbound Session Key: reads in key, stores key, and then replies with encoded key.
+
                 if (packetType == SEND_SESSION_KEY) {
-                    
+
                     int keyLen = fromClient.readInt();
                     System.out.print("Receiving session key from client...");
                     byte[] encodedKey = new byte[keyLen];
@@ -116,66 +115,66 @@ public class ServerSecured {
                     byte[] plainKeyBytes = serverKeys.decrypt(encodedKey, serverKeys.getPrivateKey());
                     SecretKey sentKey = new SecretKeySpec(plainKeyBytes, 0, plainKeyBytes.length, "AES");
                     sessionKey.setSharedKey(sentKey, keyLen);
-                    
+
                     int newPacket = fromClient.readInt();
                     if (newPacket == SEND_TEST_MESSAGE) {
                         byte[] replyMessage = sessionKey.encodeBytes(plainKeyBytes);
                         toClient.writeInt(replyMessage.length);
                         toClient.write(replyMessage);
                     }
-                    
+
                 }
-                
+
                 // If the packet is for transferring the filename
                 if (packetType == FILE_HEADER_PACKET) {
-                    
-                    
+
+
                     System.out.println("Receiving file...");
-                    
+
                     int numBytes = fromClient.readInt();
                     byte[] filename = new byte[numBytes];
                     // Must use read fully!
                     // See: https://stackoverflow.com/questions/25897627/datainputstream-read-vs-datainputstream-readfully
                     fromClient.readFully(filename, 0, numBytes);
-                    
+
                     fileOutputStream = new FileOutputStream("recv_" + new String(filename, 0, numBytes));
                     bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
-                    
-                    
+
+
                 } else if (packetType == FILE_DATA_PACKET) {
                     // If the packet is for transferring a chunk of the file
-                    
+
                     int numBytes = fromClient.readInt();
                     byte[] encodedBlock = new byte[numBytes];
                     fromClient.readFully(encodedBlock, 0, numBytes);
                     byte[] decryptedBlock = decryptChunk(encodedBlock);
                     numBytes = decryptedBlock.length;
                     md.update(decryptedBlock);
-                    
-                    
+
+
                     if (numBytes > 0)
                         bufferedFileOutputStream.write(decryptedBlock, 0, numBytes);
-                    
+
                     if (numBytes < 117) {
                         // generate Digest, check against sent digest
                         byte[] digest = md.digest();
                         int digestLength = fromClient.readInt();
                         int digestPacket = fromClient.readInt();
-                        
+
                         if (digestPacket == FILE_DIGEST_PACKET) {
                             System.out.print("Verifying file...");
                             byte[] codedChecksum = new byte[digestLength];
                             fromClient.readFully(codedChecksum, 0, digestLength);
                             byte[] checksum = decryptChunk(codedChecksum);
-                            
+
                             if (checksum == digest) {
                                 toClient.writeInt(OK_PACKET);
                             }
                             System.out.println("Done.");
                         }
-                        
+
                         System.out.println("Closing connection...");
-                        
+
                         if (bufferedFileOutputStream != null) bufferedFileOutputStream.close();
                         if (bufferedFileOutputStream != null) fileOutputStream.close();
                         fromClient.close();
@@ -184,14 +183,14 @@ public class ServerSecured {
                         modeHasBeenSet = false;
                     }
                 }
-                
+
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
     }
-    
+
     static byte[] decryptChunk(byte[] encrypted) throws Exception {
         /**
          * This function reads in the necessary packet-processing data from Client
@@ -209,7 +208,7 @@ public class ServerSecured {
         }
         return plainBytes;
     }
-    
+
     static void theAuthentication() {
         /**
          This function will be called in tandem with the theAuthentication() function in client.
