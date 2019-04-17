@@ -28,13 +28,13 @@ public class ServerSecured {
     private static int mode;
     private static boolean modeHasBeenSet = false;
     private static PublicKey clientKey;
-    private static RSAKeyPair serverKeys;
+    private static RSAKeyHelper serverKeys;
 
     public static void main(String[] args) {
         System.out.println("Starting up Server...");
         System.out.print("Retrieving Keys...");
         try {
-            serverKeys = new RSAKeyPair(filedir+serverPublicKeyFile, filedir+serverPrivateKeyFile);
+            serverKeys = new RSAKeyHelper(filedir+serverPublicKeyFile, filedir+serverPrivateKeyFile);
         } catch (Exception e){
             System.out.println("Keys not found!");
 //            e.printStackTrace();

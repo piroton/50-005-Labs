@@ -9,8 +9,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 public class ClientSecured {
-    // static String filedir = "D:/Github/50-005-Labs/prog-assignment-2/";
-    static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/"  // for junde
+    static String filedir = "D:/Github/50-005-Labs/prog-assignment-2/";
+//    static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
     static String clientPublicKeyFile = "clientpublic.der";
     static String clientPrivateKeyFile = "clientkey.der";
 
@@ -39,7 +39,7 @@ public class ClientSecured {
     // Mode = 2 is CP-2;
 
     private final static int MODE = 1;
-    static RSAKeyPair clientKeys;
+    static RSAKeyHelper clientKeys;
     static PublicKey serverKey;
     static Key sessionKey;
     static byte[] filebytes;
@@ -99,7 +99,7 @@ public class ClientSecured {
 
                 System.out.print("Retrieving Client keys...");
                 try {
-                    clientKeys = new RSAKeyPair(filedir + clientPublicKeyFile,
+                    clientKeys = new RSAKeyHelper(filedir + clientPublicKeyFile,
                             filedir + clientPrivateKeyFile);
                 } catch (Exception e) {
                     // e.printStackTrace();
@@ -118,6 +118,9 @@ public class ClientSecured {
             if (MODE == 2){
                 System.out.println("CP-2 Mode Detected... notifying server.");
                 toServer.writeInt(CP_2_PACKET);
+                
+                
+                
             }
 
             // TODO: CP-2 Style of Cryptography

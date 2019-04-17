@@ -4,7 +4,7 @@ import java.security.*;
 import java.security.spec.*;
 
 
-public class RSAKeyPair {
+public class RSAKeyHelper {
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private Cipher RSAcipher;
@@ -20,7 +20,7 @@ public class RSAKeyPair {
         return keyBytes;
     }
     
-    public RSAKeyPair(String pubkey, String privkey) throws Exception {
+    public RSAKeyHelper(String pubkey, String privkey) throws Exception {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         
         byte[] privateKeyBytes = getKeyBytes(privkey);
@@ -35,7 +35,7 @@ public class RSAKeyPair {
         RSAcipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
     }
     
-    public RSAKeyPair(PublicKey pubKey, PrivateKey privKey) {
+    public RSAKeyHelper(PublicKey pubKey, PrivateKey privKey) {
         privateKey = privKey;
         publicKey = pubKey;
     }
