@@ -102,44 +102,6 @@ public class ClientSecured {
 
             System.out.print("Initializing File Sending Process...");
 
-            // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
-            /**
-            in order:
-            1. client sends message  (dunnid send mode cos both are gna start the same way anw)
-            2. server sends OK + encrypted version of (nonce+message) (with server private key)
-            3. client sends (request for signed certificate)+(encrypted version of (message) (with client private key))
-            4. server sends signed certificate
-            5. client retrieves server's public key, decrypts first messsage and compare with first message received by server, once correct
-            6. client sends encrypted version of ((nonce+1)+client public key) (with server public key)
-            7. server decrypts with server private key, retrieve client public key, verify nonce+1
-            8. server sends encrypted version of (nonce+2)+(message) (with client public key)
-            9. client decrypt message, verify message and nonce+2, COMPLETE
-
-            **/
-            final String encoding_type = "UTF-16";
-            final String message = "HALLO THIS IS PATRICK";
-            final int nonce;
-            final String ok_message = "OK";
-            final int message_length = 50;
-
-            System.out.println("Step 1");
-            try{
-                char[] step2send = new char[message_length];
-                step2send = message.toCharArray();
-                byte[] step2sendByte = new String(step2send).getBytes(encoding_type);
-                System.out.println(Arrays.toString(step2sendByte));
-                toServer.write(step2sendByte);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-
-            // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
-
-
-
-
-
             if (MODE == 1) {
                 // MODE 1 describes CP-1 Style Cryptography: public-private double key signing
                 System.out.println("CP-1 Mode Detected... notifying server.");
@@ -165,15 +127,15 @@ public class ClientSecured {
 
             if (MODE == 2) {
                 /**
-                 * MODE 2 Describes Symmetric Key Cryptography: AES-128.
-                 * 1. Notify Server that protocol is CP-2.
-                 * 2. Generate Shared Key via AESKeyHelper class
-                 * 3. Encode AES Key with Server Public Key
-                 * 4. Send session key packet header.
-                 * 5. Send session key.
-                 * 6a. Receive encrypted bytes for verification. (encoded AES key)
-                 * 6b. Verify that Server has the correct AES Key by decrypting bytes.
-                 * */
+                 MODE 2 Describes Symmetric Key Cryptography: AES-128.
+                 1. Notify Server that protocol is CP-2.
+                 2. Generate Shared Key via AESKeyHelper class
+                 3. Encode AES Key with Server Public Key
+                 4. Send session key packet header.
+                 5. Send session key.
+                 6a. Receive encrypted bytes for verification. (encoded AES key)
+                 6b. Verify that Server has the correct AES Key by decrypting bytes.
+                 **/
                 System.out.println("CP-2 Mode Detected... notifying server.");
                 toServer.writeInt(CP_2_PACKET);
 
@@ -199,6 +161,79 @@ public class ClientSecured {
                     System.out.println("Server does not have key! Error!");
                 }
             }
+
+            // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
+            /**
+            in order:
+            1. client sends message  (dunnid send mode cos both are gna start the same way anw)
+            2. server sends OK
+            3. client sends message1 (request for encrypted nonce and message)
+            4. server sends encrypted version of (nonce+message), client saves in nonce_message (with server private key)
+            5. client sends encrypted version of (message) (with client private key)
+            6. server sends OK
+            7. client sends request for signed certificate
+            8. server sends signed certificate
+            9. client retrieves server's public key, decrypts first messsage and compare with first message received by server, once correct
+            10. client sends encrypted version of ((nonce+1)+client public key) (with server public key)
+            11. server decrypts with server private key, retrieve client public key, verify nonce+1
+            12. server sends encrypted version of (nonce+2)+(message) (with client public key)
+            13. client decrypt message, verify message and nonce+2, COMPLETE
+
+            **/
+            final String encoding_type = "UTF-16";
+            final String message = "HALLO THIS IS PATRICK";
+            final String message1 = "HALLO POLLY WANTS A CRACKER";  // treat this as a standardised message protocol
+            final int nonce;
+            final String ok_message = "OK";
+            byte[] nonce_message = new byte[200];
+            byte[] received_message_byte = new byte[200];
+            byte[] output_message_byte_decrypt;
+            byte[] output_message_byte_encrypt;
+            String received_message_string = null;
+            int message_length;
+            String message_length_string;
+
+            // Step 1
+            System.out.println("Client - Step 1");
+            try{
+                toServer.writeUTF(message);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            // Step 2
+            System.out.println("Client - Step 2");
+            while (received_message_string == null){
+                received_message_string = fromServer.readUTF();
+            }
+            if (received_message_string.equals(ok_message)){
+                received_message_string = null;
+            }
+            // Step 3
+            System.out.println("Client - Step 3");
+            try{
+                toServer.writeUTF(message1);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            // Step 4
+            System.out.println("Client - Step 4");
+            fromServer.readFully(nonce_message);
+            // Step 5
+            System.out.println("Client - Step 5");
+            output_message_byte_decrypt = message.getBytes();
+            System.out.println(Arrays.toString(output_message_byte_decrypt));
+            output_message_byte_encrypt = clientKeys.encryptPrivate(output_message_byte_decrypt);
+            try {
+                toServer.write(output_message_byte_encrypt);
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+
+
+
+            // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
+
+
 
             System.out.print("Sending File now..");
             // Send the filename
@@ -247,6 +282,7 @@ public class ClientSecured {
 
         long timeTaken = System.nanoTime() - timeStarted;
         System.out.println("Program took: " + timeTaken / 1000000.0 + "ms to run");
+
     }
 
     static void sendChunk(byte[] bytes, DataOutputStream toServer, int packetType) throws Exception {

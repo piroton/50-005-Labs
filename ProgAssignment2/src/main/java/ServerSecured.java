@@ -77,26 +77,130 @@ public class ServerSecured {
             toClient = new DataOutputStream(connectionSocket.getOutputStream());
             MessageDigest md = MessageDigest.getInstance("MD5");
 
+            // The Authentication START
+            int server_state = 1;
+            String message = null;
+            byte[] message_encrypt = new byte[200];
+
+            // The Authentication END
+
+
             while (!connectionSocket.isClosed()) {
 
                 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
                 // bug: printed string came out wrong. tried: converting received byte array to string using US_ASCII;
 
                 final String encoding_type = "UTF-16";
-                final String message;
-                final int nonce = 30;
+                final String message1 = "HALLO POLLY WANTS A CRACKER";  // treat this as a standard message protocol
+                final int nonce = 100;
                 final String ok_message = "OK";
                 final int message_length = 50;
+                String output_message;
+                byte[] output_message_byte_decrypt;
+                byte[] output_message_byte_encrypt;
+                String received_message_string = null;
 
-                System.out.println("Step 2");
-                byte[] step2receive = new byte[message_length];
-                fromClient.readFully(step2receive);
-                String step2receiveString = new String(step2receive);
-                System.out.println(step2receiveString);
+/**
+                if (server_state == 1){
+                    // Step 1
+                    System.out.println("Server - Step 1");
+                    while (message == null){
+                        message = fromClient.readUTF();
+                    }
+                    server_state = 2;
+                }
+                else if (server_state == 2) {
+                    // Step 2
+                    // sends OK
+                    System.out.println("Server - Step 2");
+                    try{
+                        toClient.writeUTF(ok_message);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    server_state = 3;
+                }
+                else if (server_state == 3){
+                    // Step 3
+                    System.out.println("Server - Step 3");
+                    while (received_message_string == null){
+                        received_message_string = fromClient.readUTF();
+                    }
+                    if (received_message_string.equals(message1)){
+                        System.out.println("message1 received by server");
+                        server_state = 4;
+                        received_message_string = null;
+                    }
+                }
+                else if (server_state == 4){
+                    // Step 4
+                    System.out.println("Server - Step 4");
+                    try{
+                        output_message = Integer.toString(nonce) + message;
+                        output_message_byte_decrypt = output_message.getBytes();
+                        output_message_byte_encrypt = serverKeys.encryptPrivate(output_message_byte_decrypt);
+
+                        toClient.write(output_message_byte_encrypt);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    server_state = 5;
+                }
+                else if (server_state == 5){
+                    // Step 5
+                    fromClient.readFully(message_encrypt);
+                    System.out.println(Arrays.toString(message_encrypt));
+                }
+**/
+                    // Step 1
+                    System.out.println("Server - Step 1");
+                    while (message == null){
+                        message = fromClient.readUTF();
+                    }
+                    server_state = 2;
+
+                    // Step 2
+                    // sends OK
+                    System.out.println("Server - Step 2");
+                    try{
+                        toClient.writeUTF(ok_message);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    server_state = 3;
+
+                    // Step 3
+                    System.out.println("Server - Step 3");
+                    while (received_message_string == null){
+                        received_message_string = fromClient.readUTF();
+                    }
+                    if (received_message_string.equals(message1)){
+                        System.out.println("message1 received by server");
+                        server_state = 4;
+                        received_message_string = null;
+                    }
+
+                    // Step 4
+                    System.out.println("Server - Step 4");
+                    try{
+                        output_message = Integer.toString(nonce) + message;
+                        output_message_byte_decrypt = output_message.getBytes();
+                        output_message_byte_encrypt = serverKeys.encryptPrivate(output_message_byte_decrypt);
+
+                        toClient.write(output_message_byte_encrypt);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    server_state = 5;
+
+                    // Step 5
+                    fromClient.readFully(message_encrypt);
+                    System.out.println(Arrays.toString(message_encrypt));
 
 
 
                 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
+                /**
 
                 int packetType = fromClient.readInt();
 
@@ -202,7 +306,7 @@ public class ServerSecured {
                         modeHasBeenSet = false;
                     }
                 }
-
+                **/
             }
         } catch (Exception e) {
             e.printStackTrace();
