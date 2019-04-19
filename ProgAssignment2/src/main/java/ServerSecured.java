@@ -10,6 +10,8 @@ import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.*;
+
 
 /**
  * NOTE: This class uses the AESKeyHelper and RSAKeyHelper classes.
@@ -77,11 +79,28 @@ public class ServerSecured {
 
             while (!connectionSocket.isClosed()) {
 
+                // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
+                // bug: printed string came out wrong. tried: converting received byte array to string using US_ASCII;
+
+                final String encoding_type = "UTF-16";
+                final String message;
+                final int nonce = 30;
+                final String ok_message = "OK";
+                final int message_length = 50;
+
+                System.out.println("Step 2");
+                byte[] step2receive = new byte[message_length];
+                fromClient.readFully(step2receive);
+                String step2receiveString = new String(step2receive);
+                System.out.println(step2receiveString);
+
+
+
+                // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
+
                 int packetType = fromClient.readInt();
 
                 // TODO: PART 1
-
-
                 // set MODE of cryptography for uploading; set helper mode.
                 if (packetType == CP_1_PACKET && !modeHasBeenSet) {
                     modeHasBeenSet = true;
@@ -209,10 +228,13 @@ public class ServerSecured {
         return plainBytes;
     }
 
-    static void theAuthentication() {
-        /**
-         This function will be called in tandem with the theAuthentication() function in client.
-         Both enters function, do appropriate authentication procedures and exit their respective functions together.
-         **/
+    static byte[] strToByte(String input) throws Exception{
+        byte[] output = input.getBytes("UTF-8");
+        return output;
+    }
+
+    static String byteToStr(byte[] input){
+        String output = new String(input);
+        return output;
     }
 }

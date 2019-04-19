@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.PublicKey;
+import java.util.*;
 
 /**
  * NOTE: You should work primarily on the TODO portions.
@@ -29,6 +30,7 @@ public class ClientSecured {
     final static int SEND_SESSION_KEY = 200;
     final static int SEND_TEST_MESSAGE = 201;
     final static int OK_PACKET = 80;
+
 
     // PACKET SCHEMA:
     /*
@@ -100,15 +102,46 @@ public class ClientSecured {
 
             System.out.print("Initializing File Sending Process...");
 
+            // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
+            /**
+            in order:
+            1. client sends message  (dunnid send mode cos both are gna start the same way anw)
+            2. server sends OK + encrypted version of (nonce+message) (with server private key)
+            3. client sends (request for signed certificate)+(encrypted version of (message) (with client private key))
+            4. server sends signed certificate
+            5. client retrieves server's public key, decrypts first messsage and compare with first message received by server, once correct
+            6. client sends encrypted version of ((nonce+1)+client public key) (with server public key)
+            7. server decrypts with server private key, retrieve client public key, verify nonce+1
+            8. server sends encrypted version of (nonce+2)+(message) (with client public key)
+            9. client decrypt message, verify message and nonce+2, COMPLETE
+
+            **/
+            final String encoding_type = "UTF-16";
+            final String message = "HALLO THIS IS PATRICK";
+            final int nonce;
+            final String ok_message = "OK";
+            final int message_length = 50;
+
+            System.out.println("Step 1");
+            try{
+                char[] step2send = new char[message_length];
+                step2send = message.toCharArray();
+                byte[] step2sendByte = new String(step2send).getBytes(encoding_type);
+                System.out.println(Arrays.toString(step2sendByte));
+                toServer.write(step2sendByte);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+
+            // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
+
+
+
+
+
             if (MODE == 1) {
-                /**
-                 * MODE 1 describes CP-1 Style Cryptography: public-private double key signing
-                 * Process:
-                 * 1. Notify server that the protocol is CP-1.
-                 * 2. Retrieve and set Client Keys.
-                 * 3. Send the public key packet header.
-                 * 4. Send the public key.
-                 * */
+                // MODE 1 describes CP-1 Style Cryptography: public-private double key signing
                 System.out.println("CP-1 Mode Detected... notifying server.");
                 toServer.writeInt(CP_1_PACKET);
 
@@ -243,13 +276,13 @@ public class ClientSecured {
         toServer.write(bytesEncrypted);
     }
 
-    static void theAuthentication() {
-        /**
-         This function will be called in tandem with the theAuthentication() function in server.
-         Both enters function, do appropriate authentication procedures and exit their respective functions together.
+    static byte[] strToByte(String input) throws Exception{
+        byte[] output = input.getBytes("UTF-8");
+        return output;
+    }
 
-         1. Client says hello to server
-         2.
-         **/
+    static String byteToStr(byte[] input){
+        String output = new String(input);
+        return output;
     }
 }
