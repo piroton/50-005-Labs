@@ -100,68 +100,6 @@ public class ClientSecured {
             // TODO: If all is well, continue; else, close socket
 
 
-            System.out.print("Initializing File Sending Process...");
-
-            if (MODE == 1) {
-                // MODE 1 describes CP-1 Style Cryptography: public-private double key signing
-                System.out.println("CP-1 Mode Detected... notifying server.");
-                toServer.writeInt(CP_1_PACKET);
-
-                System.out.print("Retrieving Client keys...");
-                try {
-                    clientKeys = new RSAKeyHelper(filedir + clientPublicKeyFile,
-                            filedir + clientPrivateKeyFile);
-                } catch (Exception e) {
-                    // e.printStackTrace();
-                    System.out.println("Key Files not found!");
-                }
-                System.out.println("done.");
-
-                PublicKey pubKey = clientKeys.getPublicKey();
-
-                System.out.println("Transmitting public key to Server...");
-                toServer.writeInt(PUB_KEY_PACKET);
-                byte[] bytePublicKey = pubKey.getEncoded();
-                toServer.write(bytePublicKey);
-            }
-
-            if (MODE == 2) {
-                /**
-                 MODE 2 Describes Symmetric Key Cryptography: AES-128.
-                 1. Notify Server that protocol is CP-2.
-                 2. Generate Shared Key via AESKeyHelper class
-                 3. Encode AES Key with Server Public Key
-                 4. Send session key packet header.
-                 5. Send session key.
-                 6a. Receive encrypted bytes for verification. (encoded AES key)
-                 6b. Verify that Server has the correct AES Key by decrypting bytes.
-                 **/
-                System.out.println("CP-2 Mode Detected... notifying server.");
-                toServer.writeInt(CP_2_PACKET);
-
-                System.out.print("Generating Shared Key...");
-                sessionKey = new AESKeyHelper(128);
-                System.out.println("done");
-
-                System.out.print("Transmitting Session Key To Server...");
-                byte[] plainKey = sessionKey.getSharedKey().getEncoded();
-                byte[] encodedKey = clientKeys.encryptExternalRSA(plainKey, serverPublicKey);
-                toServer.writeInt(SEND_SESSION_KEY);
-                toServer.writeInt(encodedKey.length);
-                toServer.write(encodedKey);
-                System.out.println("Done.");
-
-                System.out.print("Checking if Server has the correct key...");
-                toServer.writeInt(SEND_TEST_MESSAGE);
-                int replyLength = fromServer.readInt();
-                byte[] encoded = new byte[replyLength];
-                fromServer.read(encoded);
-                byte[] replyMessage = sessionKey.decodeBytes(encoded);
-                if (replyMessage != plainKey) {
-                    System.out.println("Server does not have key! Error!");
-                }
-            }
-
             // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
             /**
             in order:
@@ -232,6 +170,75 @@ public class ClientSecured {
 
 
             // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
+
+
+
+
+
+
+
+            System.out.print("Initializing File Sending Process...");
+
+            if (MODE == 1) {
+                // MODE 1 describes CP-1 Style Cryptography: public-private double key signing
+                System.out.println("CP-1 Mode Detected... notifying server.");
+                toServer.writeInt(CP_1_PACKET);
+
+                System.out.print("Retrieving Client keys...");
+                try {
+                    clientKeys = new RSAKeyHelper(filedir + clientPublicKeyFile,
+                            filedir + clientPrivateKeyFile);
+                } catch (Exception e) {
+                    // e.printStackTrace();
+                    System.out.println("Key Files not found!");
+                }
+                System.out.println("done.");
+
+                PublicKey pubKey = clientKeys.getPublicKey();
+
+                System.out.println("Transmitting public key to Server...");
+                toServer.writeInt(PUB_KEY_PACKET);
+                byte[] bytePublicKey = pubKey.getEncoded();
+                toServer.write(bytePublicKey);
+            }
+
+            if (MODE == 2) {
+                /**
+                 MODE 2 Describes Symmetric Key Cryptography: AES-128.
+                 1. Notify Server that protocol is CP-2.
+                 2. Generate Shared Key via AESKeyHelper class
+                 3. Encode AES Key with Server Public Key
+                 4. Send session key packet header.
+                 5. Send session key.
+                 6a. Receive encrypted bytes for verification. (encoded AES key)
+                 6b. Verify that Server has the correct AES Key by decrypting bytes.
+                 **/
+                System.out.println("CP-2 Mode Detected... notifying server.");
+                toServer.writeInt(CP_2_PACKET);
+
+                System.out.print("Generating Shared Key...");
+                sessionKey = new AESKeyHelper(128);
+                System.out.println("done");
+
+                System.out.print("Transmitting Session Key To Server...");
+                byte[] plainKey = sessionKey.getSharedKey().getEncoded();
+                byte[] encodedKey = clientKeys.encryptExternalRSA(plainKey, serverPublicKey);
+                toServer.writeInt(SEND_SESSION_KEY);
+                toServer.writeInt(encodedKey.length);
+                toServer.write(encodedKey);
+                System.out.println("Done.");
+
+                System.out.print("Checking if Server has the correct key...");
+                toServer.writeInt(SEND_TEST_MESSAGE);
+                int replyLength = fromServer.readInt();
+                byte[] encoded = new byte[replyLength];
+                fromServer.read(encoded);
+                byte[] replyMessage = sessionKey.decodeBytes(encoded);
+                if (replyMessage != plainKey) {
+                    System.out.println("Server does not have key! Error!");
+                }
+            }
+
 
 
 

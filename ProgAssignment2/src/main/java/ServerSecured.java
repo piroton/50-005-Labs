@@ -175,7 +175,6 @@ public class ServerSecured {
                         received_message_string = fromClient.readUTF();
                     }
                     if (received_message_string.equals(message1)){
-                        System.out.println("message1 received by server");
                         server_state = 4;
                         received_message_string = null;
                     }
@@ -184,7 +183,7 @@ public class ServerSecured {
                     System.out.println("Server - Step 4");
                     try{
                         output_message = Integer.toString(nonce) + message;
-                        output_message_byte_decrypt = output_message.getBytes();
+                        output_message_byte_decrypt = output_message.getBytes("UTF-16");
                         output_message_byte_encrypt = serverKeys.encryptPrivate(output_message_byte_decrypt);
 
                         toClient.write(output_message_byte_encrypt);
@@ -194,6 +193,7 @@ public class ServerSecured {
                     server_state = 5;
 
                     // Step 5
+                    System.out.println("Server - Step 5");
                     fromClient.readFully(message_encrypt);
                     System.out.println(Arrays.toString(message_encrypt));
 
