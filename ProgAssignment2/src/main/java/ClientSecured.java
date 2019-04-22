@@ -197,9 +197,11 @@ public class ClientSecured {
             System.out.println("Client - Step 1");
             try{
                 toServer.writeUTF(message);
+                toServer.flush();
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
             // Step 2
             System.out.println("Client - Step 2");
             while (received_message_string == null){
@@ -208,16 +210,21 @@ public class ClientSecured {
             if (received_message_string.equals(ok_message)){
                 received_message_string = null;
             }
+
             // Step 3
             System.out.println("Client - Step 3");
             try{
+                Thread.sleep(1000);
                 toServer.writeUTF(message1);
+                toServer.flush();
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
             // Step 4
             System.out.println("Client - Step 4");
             fromServer.readFully(nonce_message);
+
             // Step 5
             System.out.println("Client - Step 5");
             output_message_byte_decrypt = message.getBytes();
@@ -225,6 +232,7 @@ public class ClientSecured {
             output_message_byte_encrypt = clientKeys.encryptPrivate(output_message_byte_decrypt);
             try {
                 toServer.write(output_message_byte_encrypt);
+                toServer.flush();
             } catch (Exception e){
                 e.printStackTrace();
             }
