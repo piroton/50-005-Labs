@@ -81,7 +81,6 @@ public class ServerSecured {
             int server_state = 1;
             String message = null;
             byte[] message_encrypt = new byte[200];
-            String received_message_string = null;
 
             // The Authentication END
 
@@ -99,6 +98,7 @@ public class ServerSecured {
                 String output_message;
                 byte[] output_message_byte_decrypt;
                 byte[] output_message_byte_encrypt;
+                String received_message_string = null;
 
 /**
                 if (server_state == 1){
@@ -164,7 +164,6 @@ public class ServerSecured {
                     System.out.println("Server - Step 2");
                     try{
                         toClient.writeUTF(ok_message);
-                        toClient.flush();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -175,7 +174,6 @@ public class ServerSecured {
                     while (received_message_string == null){
                         received_message_string = fromClient.readUTF();
                     }
-                    System.out.println("PONG");
                     if (received_message_string.equals(message1)){
                         System.out.println("message1 received by server");
                         server_state = 4;
@@ -190,7 +188,6 @@ public class ServerSecured {
                         output_message_byte_encrypt = serverKeys.encryptPrivate(output_message_byte_decrypt);
 
                         toClient.write(output_message_byte_encrypt);
-                        toClient.flush();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
