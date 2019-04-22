@@ -80,7 +80,7 @@ public class ServerSecured {
             // The Authentication START
             int server_state = 1;
             String message = null;
-            byte[] message_encrypt = new byte[200];
+            byte[] message_encrypt = new byte[44];
 
             // The Authentication END
 
@@ -100,103 +100,14 @@ public class ServerSecured {
                 byte[] output_message_byte_encrypt;
                 String received_message_string = null;
 
-/**
-                if (server_state == 1){
+
+                while (server_state == 1){
                     // Step 1
                     System.out.println("Server - Step 1");
-                    while (message == null){
-                        message = fromClient.readUTF();
-                    }
+                    fromClient.readFully(message_encrypt);
+                    System.out.println(new String(message_encrypt));
                     server_state = 2;
                 }
-                else if (server_state == 2) {
-                    // Step 2
-                    // sends OK
-                    System.out.println("Server - Step 2");
-                    try{
-                        toClient.writeUTF(ok_message);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    server_state = 3;
-                }
-                else if (server_state == 3){
-                    // Step 3
-                    System.out.println("Server - Step 3");
-                    while (received_message_string == null){
-                        received_message_string = fromClient.readUTF();
-                    }
-                    if (received_message_string.equals(message1)){
-                        System.out.println("message1 received by server");
-                        server_state = 4;
-                        received_message_string = null;
-                    }
-                }
-                else if (server_state == 4){
-                    // Step 4
-                    System.out.println("Server - Step 4");
-                    try{
-                        output_message = Integer.toString(nonce) + message;
-                        output_message_byte_decrypt = output_message.getBytes();
-                        output_message_byte_encrypt = serverKeys.encryptPrivate(output_message_byte_decrypt);
-
-                        toClient.write(output_message_byte_encrypt);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    server_state = 5;
-                }
-                else if (server_state == 5){
-                    // Step 5
-                    fromClient.readFully(message_encrypt);
-                    System.out.println(Arrays.toString(message_encrypt));
-                }
-**/
-                    // Step 1
-                    System.out.println("Server - Step 1");
-                    while (message == null){
-                        message = fromClient.readUTF();
-                    }
-                    server_state = 2;
-
-                    // Step 2
-                    // sends OK
-                    System.out.println("Server - Step 2");
-                    try{
-                        toClient.writeUTF(ok_message);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    server_state = 3;
-
-                    // Step 3
-                    System.out.println("Server - Step 3");
-                    while (received_message_string == null){
-                        received_message_string = fromClient.readUTF();
-                    }
-                    if (received_message_string.equals(message1)){
-                        server_state = 4;
-                        received_message_string = null;
-                    }
-
-                    // Step 4
-                    System.out.println("Server - Step 4");
-                    try{
-                        output_message = Integer.toString(nonce) + message;
-                        output_message_byte_decrypt = output_message.getBytes("UTF-16");
-                        output_message_byte_encrypt = serverKeys.encryptPrivate(output_message_byte_decrypt);
-
-                        toClient.write(output_message_byte_encrypt);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    server_state = 5;
-
-                    // Step 5
-                    System.out.println("Server - Step 5");
-                    fromClient.readFully(message_encrypt);
-                    System.out.println(Arrays.toString(message_encrypt));
-
 
 
                 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END

@@ -131,39 +131,16 @@ public class ClientSecured {
             int message_length;
             String message_length_string;
 
+            // (number of chars + 1) *2 == number of chars
+
             // Step 1
             System.out.println("Client - Step 1");
             try{
-                toServer.writeUTF(message);
+                System.out.println(message.length());
+                output_message_byte_decrypt = message.getBytes("UTF-16");
+                toServer.write(output_message_byte_decrypt);
+                System.out.println(Arrays.toString(output_message_byte_decrypt));
             } catch (Exception e) {
-                e.printStackTrace();
-            }
-            // Step 2
-            System.out.println("Client - Step 2");
-            while (received_message_string == null){
-                received_message_string = fromServer.readUTF();
-            }
-            if (received_message_string.equals(ok_message)){
-                received_message_string = null;
-            }
-            // Step 3
-            System.out.println("Client - Step 3");
-            try{
-                toServer.writeUTF(message1);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            // Step 4
-            System.out.println("Client - Step 4");
-            fromServer.readFully(nonce_message);
-            // Step 5
-            System.out.println("Client - Step 5");
-            output_message_byte_decrypt = message.getBytes();
-            System.out.println(Arrays.toString(output_message_byte_decrypt));
-            output_message_byte_encrypt = clientKeys.encryptPrivate(output_message_byte_decrypt);
-            try {
-                toServer.write(output_message_byte_encrypt);
-            } catch (Exception e){
                 e.printStackTrace();
             }
 
