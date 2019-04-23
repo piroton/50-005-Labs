@@ -1,8 +1,5 @@
 import javax.crypto.KeyGenerator;
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
+import java.io.*;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.security.PublicKey;
@@ -30,6 +27,7 @@ public class ClientSecured {
     final static int SEND_SESSION_KEY = 200;
     final static int SEND_TEST_MESSAGE = 201;
     final static int OK_PACKET = 80;
+    final static int STOP_PACKET = 404;
 
 
     // PACKET SCHEMA:
@@ -176,7 +174,19 @@ public class ClientSecured {
                 System.out.println("Transmitting public key to Server...");
                 toServer.writeInt(PUB_KEY_PACKET);
                 byte[] bytePublicKey = pubKey.getEncoded();
-                toServer.write(bytePublicKey);
+                ByteArrayInputStream keyStream = new ByteArrayInputStream(bytePublicKey);
+                sendChunksWithHeader(keyStream, 117, 128, SEND_SESSION_KEY, toServer);
+                toServer.writeInt(STOP_PACKET);
+    
+                System.out.print("Checking if Server has the correct key...");
+                toServer.writeInt(SEND_TEST_MESSAGE);
+                int replyLength = fromServer.readInt();
+                byte[] encoded = new byte[replyLength];
+                fromServer.read(encoded);
+                byte[] replyMessage = clientKeys.decrypt(encoded, clientKeys.getPrivateKey());
+                if (replyMessage != "Hi".getBytes()) {
+                    System.out.println("Server does not have key! Error!");
+                }
             }
 
             if (MODE == 2) {
@@ -199,10 +209,9 @@ public class ClientSecured {
 
                 System.out.print("Transmitting Session Key To Server...");
                 byte[] plainKey = sessionKey.getSharedKey().getEncoded();
-                byte[] encodedKey = clientKeys.encryptExternalRSA(plainKey, serverPublicKey);
-                toServer.writeInt(SEND_SESSION_KEY);
-                toServer.writeInt(encodedKey.length);
-                toServer.write(encodedKey);
+                ByteArrayInputStream keyStream = new ByteArrayInputStream(plainKey);
+                sendChunksWithHeader(keyStream, 117, 128, SEND_SESSION_KEY, toServer);
+                toServer.writeInt(STOP_PACKET);
                 System.out.println("Done.");
 
                 System.out.print("Checking if Server has the correct key...");
@@ -211,7 +220,7 @@ public class ClientSecured {
                 byte[] encoded = new byte[replyLength];
                 fromServer.read(encoded);
                 byte[] replyMessage = sessionKey.decodeBytes(encoded);
-                if (replyMessage != plainKey) {
+                if (replyMessage != "Hi".getBytes()) {
                     System.out.println("Server does not have key! Error!");
                 }
             }
@@ -304,5 +313,22 @@ public class ClientSecured {
     static String byteToStr(byte[] input){
         String output = new String(input);
         return output;
+    }
+    
+    static void sendChunksWithHeader (ByteArrayInputStream rawdata, int chunkSize, int totalBytes,
+                                      int dataPacketType, DataOutputStream outgoing) throws Exception {
+        byte[] chunk = new byte[chunkSize];
+        outgoing.writeInt(totalBytes);
+        int bytesRead;
+        for (boolean streamEnded = false; !streamEnded;){
+            bytesRead = rawdata.read(chunk);
+            chunk = clientKeys.encryptExternalRSA(chunk, serverPublicKey);
+            streamEnded = bytesRead < chunkSize;
+            outgoing.writeInt(dataPacketType);
+            outgoing.writeInt(chunk.length);
+            outgoing.write(chunk);
+        }
+        
+        rawdata.close();
     }
 }

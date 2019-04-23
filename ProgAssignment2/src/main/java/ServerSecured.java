@@ -1,9 +1,6 @@
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.KeyFactory;
@@ -37,6 +34,7 @@ public class ServerSecured {
     final static int SEND_SESSION_KEY = 200;
     final static int SEND_TEST_MESSAGE = 201;
     final static int OK_PACKET = 80;
+    final static int STOP_PACKET = 404;
 
     // Note:
     // Mode = 1 is CP-1;
@@ -130,28 +128,31 @@ public class ServerSecured {
                 if (packetType == PUB_KEY_PACKET) {
 
                     System.out.print("Receiving public key from client...");
-                    byte[] clientPublicKeyBytes = new byte[128];
-                    fromClient.readFully(clientPublicKeyBytes);
-
+                    int keyLen = fromClient.readInt();
+                    byte[] clientPublicKeyBytes = receiveChunksMerge(128, STOP_PACKET, fromClient);
                     KeyFactory pubkf = KeyFactory.getInstance("RSA");
                     X509EncodedKeySpec clientKeySpec = new X509EncodedKeySpec(clientPublicKeyBytes);
                     clientPublicKey = pubkf.generatePublic(clientKeySpec);
                     System.out.println("Done.");
+    
+                    int newPacket = fromClient.readInt();
+                    if (newPacket == SEND_TEST_MESSAGE) {
+                        byte[] replyMessage = serverKeys.encryptExternalRSA("Hi".getBytes(), clientPublicKey);
+                        toClient.writeInt(replyMessage.length);
+                        toClient.write(replyMessage);
+                    }
                 }
 
                 if (packetType == SEND_SESSION_KEY) {
-
-                    int keyLen = fromClient.readInt();
                     System.out.print("Receiving session key from client...");
-                    byte[] encodedKey = new byte[keyLen];
-                    fromClient.read(encodedKey);
-                    byte[] plainKeyBytes = serverKeys.decrypt(encodedKey, serverKeys.getPrivateKey());
+                    int keyLen = fromClient.readInt();
+                    byte[] plainKeyBytes = receiveChunksMerge(keyLen, STOP_PACKET, fromClient);
                     SecretKey sentKey = new SecretKeySpec(plainKeyBytes, 0, plainKeyBytes.length, "AES");
                     sessionKey.setSharedKey(sentKey, keyLen);
 
                     int newPacket = fromClient.readInt();
                     if (newPacket == SEND_TEST_MESSAGE) {
-                        byte[] replyMessage = sessionKey.encodeBytes(plainKeyBytes);
+                        byte[] replyMessage = sessionKey.encodeBytes("Hi".getBytes());
                         toClient.writeInt(replyMessage.length);
                         toClient.write(replyMessage);
                     }
@@ -249,5 +250,20 @@ public class ServerSecured {
     static String byteToStr(byte[] input){
         String output = new String(input);
         return output;
+    }
+    
+    static byte[] receiveChunksMerge(int totalBytes, int stopPacket,
+                                     DataInputStream incoming) throws Exception{
+        ByteArrayOutputStream incomingData = new ByteArrayOutputStream();
+        while (incoming.readInt() != stopPacket){
+            int datasize = incoming.readInt();
+            byte[] data = new byte[datasize];
+            incoming.readFully(data);
+            data = serverKeys.decrypt(data, serverKeys.getPrivateKey());
+            incomingData.write(data);
+        }
+        byte[] data = incomingData.toByteArray();
+        incomingData.close();
+        return data;
     }
 }
