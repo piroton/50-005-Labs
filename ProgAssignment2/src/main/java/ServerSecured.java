@@ -111,7 +111,6 @@ public class ServerSecured {
 
 
                 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
-                /**
 
                 int packetType = fromClient.readInt();
 
@@ -217,7 +216,6 @@ public class ServerSecured {
                         modeHasBeenSet = false;
                     }
                 }
-                **/
             }
         } catch (Exception e) {
             e.printStackTrace();
