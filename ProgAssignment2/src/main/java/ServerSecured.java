@@ -24,6 +24,7 @@ public class ServerSecured {
     static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
     static String serverPublicKeyFile = "example.org.public.der";
     static String serverPrivateKeyFile = "example.org.private.der";
+    static String caSignedFile = "example.org.crt";
 
     final static int CP_1_PACKET = 501;
     final static int CP_2_PACKET = 502;
@@ -75,37 +76,66 @@ public class ServerSecured {
             toClient = new DataOutputStream(connectionSocket.getOutputStream());
             MessageDigest md = MessageDigest.getInstance("MD5");
 
-            // The Authentication START
-            int server_state = 1;
-            String message = null;
-            byte[] message_encrypt = new byte[44];
-
-            // The Authentication END
-
 
             while (!connectionSocket.isClosed()) {
 
                 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
-                // bug: printed string came out wrong. tried: converting received byte array to string using US_ASCII;
-
-                final String encoding_type = "UTF-16";
-                final String message1 = "HALLO POLLY WANTS A CRACKER";  // treat this as a standard message protocol
-                final int nonce = 100;
-                final String ok_message = "OK";
-                final int message_length = 50;
-                String output_message;
-                byte[] output_message_byte_decrypt;
-                byte[] output_message_byte_encrypt;
-                String received_message_string = null;
+                // Step 0
+                final String encoding_type = "UTF-8";
 
 
-                while (server_state == 1){
-                    // Step 1
-                    System.out.println("Server - Step 1");
-                    fromClient.readFully(message_encrypt);
-                    System.out.println(new String(message_encrypt));
-                    server_state = 2;
+                // Step 1 - Client sends nonce and message
+                System.out.println("Server - Step 1");
+                byte[] message_encrypt = new byte[100];
+                fromClient.readFully(message_encrypt);
+                String nonce_message = stringConvertAndTrim(message_encrypt);
+                String nonce = nonce_message.substring(0,3);
+
+
+                // Step 2 - Server sends encrypted nonce
+                byte[] nonce_bytes = padAndSendBytes(nonce);
+                byte[] encrypted_nonce_bytes = serverKeys.encryptPrivate(nonce_bytes);
+                try{
+                    toClient.write(encrypted_nonce_bytes);
+                } catch (Exception e){
+                    e.printStackTrace();
                 }
+
+
+                // Step 2 - Server sends certificate (signed cert is "example.org.crt", public key for cert is "cacse.crt")
+                File file = new File(filedir + caSignedFile);
+                byte[] bytesArray = new byte[(int) file.length()];  // length is 1265
+                FileInputStream fis = new FileInputStream(file);
+                fis.read(bytesArray);
+                fis.close();
+                toClient.write(bytesArray);
+
+
+                // Step 3 - Client sends encrypted message (by server's public key) (length of byte array is 256)
+                byte[] message_encrypted_server_public = new byte[256];
+                fromClient.readFully(message_encrypted_server_public);
+                String message_decrypted = stringConvertAndTrim(serverKeys.decrypt(message_encrypted_server_public, serverKeys.getPrivateKey()));
+                // System.out.println(nonce_message.substring(3).equals(message_decrypted));  // checking if decrypted message tallies fr$
+
+
+                // Step 4 - server sends encrypted digest of message (by server's private key)
+                // MessageDigest md = MessageDigest.getInstance("MD5");
+                byte[] message_digest = md.digest(padAndSendBytes(message_decrypted));
+                byte[] encrypted_message_digest = serverKeys.encryptPrivate(message_digest);
+                try{
+                    toClient.write(encrypted_message_digest);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+
+                // Step 4 - server sends message
+                try{
+                    toClient.write(padAndSendBytes(message_decrypted));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                System.out.println("authentication done");
 
 
                 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
@@ -266,4 +296,47 @@ public class ServerSecured {
         incomingData.close();
         return data;
     }
+
+    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
+    static final int byteArrayLength = 100;
+
+    static byte[] padAndSendBytes(String input){
+        byte[] outputByteArray = null;
+        int requiredStringLength = byteArrayLength;
+        String paddedString;
+
+        if (input.length() >= requiredStringLength){
+            System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ String is too long");
+        }
+
+        while (input.length() < requiredStringLength){
+            input = input + " ";
+        }
+
+        try{
+            outputByteArray = input.getBytes("UTF-8");
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return outputByteArray;
+    }
+
+    static String stringConvertAndTrim(byte[] input){
+        String output = new String(input);
+        int indexToSlice = output.length()-1;
+
+        while (output.charAt(indexToSlice) == ' '){
+            indexToSlice --;
+        }
+
+        output = output.substring(0,indexToSlice+1);
+        return output;
+    }
+
+    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
+
+
+
 }
