@@ -68,7 +68,7 @@ public class ServerSecured {
 
         FileOutputStream fileOutputStream = null;
         BufferedOutputStream bufferedFileOutputStream = null;
-        boolean authenticated = false;
+        boolean authenticated = true;
         
         System.out.print("Listening for connection...");
         try {
@@ -81,7 +81,7 @@ public class ServerSecured {
 
             while (!connectionSocket.isClosed()) {
 
-                if (!authenticated){
+                if (authenticated){
                     // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
                     // Step 0
                     final String encoding_type = "UTF-8";
@@ -96,6 +96,7 @@ public class ServerSecured {
     
     
                     // Step 2 - Server sends encrypted nonce
+                    System.out.println("Server - Step 2");
                     byte[] nonce_bytes = padAndSendBytes(nonce);
                     byte[] encrypted_nonce_bytes = serverKeys.encryptPrivate(nonce_bytes);
                     try{
@@ -115,14 +116,18 @@ public class ServerSecured {
     
     
                     // Step 3 - Client sends encrypted message (by server's public key) (length of byte array is 256)
+                    System.out.println("Server - Step 3");
                     byte[] message_encrypted_server_public = new byte[256];
                     fromClient.readFully(message_encrypted_server_public);
                     String message_decrypted = stringConvertAndTrim(serverKeys.decrypt(message_encrypted_server_public, serverKeys.getPrivateKey()));
-                    // System.out.println(nonce_message.substring(3).equals(message_decrypted));  // checking if decrypted message tallies fr$
+                    if (authenticated){
+                        authenticated = nonce_message.substring(3).equals(message_decrypted);  // checking if decrypted message tallies with nonce_message
+                    }
     
     
                     // Step 4 - server sends encrypted digest of message (by server's private key)
                     // MessageDigest md = MessageDigest.getInstance("MD5");
+                    System.out.println("Server - Step 4");
                     byte[] message_digest = md.digest(padAndSendBytes(message_decrypted));
                     byte[] encrypted_message_digest = serverKeys.encryptPrivate(message_digest);
                     try{
@@ -138,13 +143,14 @@ public class ServerSecured {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    System.out.println("authentication done");
-                    authenticated = true;
 
                     // if not authenticated, stop connection
                     if (!authenticated){
                         break;
                     }
+                    authenticated = false;
+                    System.out.println("authentication done");
+
                 }
 
 

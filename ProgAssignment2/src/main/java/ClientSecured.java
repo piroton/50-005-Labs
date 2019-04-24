@@ -106,7 +106,7 @@ public class ClientSecured {
             String received_message_string = null;
             int message_length;
             String message_length_string;
-            
+            boolean authenticated = true;
             
             // Step 0 - Constants
             System.out.println("Retrieving Client keys...");
@@ -132,15 +132,15 @@ public class ClientSecured {
             
             
             // Step 2 - Server sends encrypted nonce (length 256)
+            System.out.println("Client - Step 2");
             byte[] encrypted_nonce = new byte[256];
             fromServer.readFully(encrypted_nonce);
-            
-            
+
+
             // Step 2 - Server sends certificate (length 1265)
             // receive certificate from server
             byte[] certificate = new byte[1265];
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            // fromServer.readFully(certificate);
             X509Certificate CAcert = (X509Certificate) cf.generateCertificate(fromServer);
             
             // retrieve CA public key
@@ -154,10 +154,13 @@ public class ClientSecured {
                 e.printStackTrace();
             }
             serverPublicKey = CAcert.getPublicKey();
-            // System.out.println(Arrays.toString(clientKeys.decrypt(encrypted_nonce, server_public_key)));  // verified server publi$
+            if (authenticated){
+                authenticated = Arrays.equals(clientKeys.decrypt(encrypted_nonce, serverPublicKey), padAndSendBytes(Integer.toString(nonce)));
+            }
             
             
             // Step 3 - Client sends encrypted message (by server's public key)
+            System.out.println("Client - Step 3");
             byte[] message_encrypted_server_public = clientKeys.encryptExternalRSA(padAndSendBytes(message), serverPublicKey);
             try {
                 toServer.write(message_encrypted_server_public);
@@ -168,17 +171,20 @@ public class ClientSecured {
             
             
             // Step 4 - server sends encrypted digest of message (by server's private key) (length of encrypted digest is 256)
+            System.out.println("Client - Step 4");
             byte[] encrypted_message_digest = new byte[256];
             fromServer.readFully(encrypted_message_digest);
             byte[] decrypted_message_digest = clientKeys.decrypt(encrypted_message_digest, serverPublicKey);
-            
             
             // Step 4 - server sends message
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] message_server = new byte[100];
             fromServer.readFully(message_server);
             byte[] new_message_digest = md.digest(message_server);
-            boolean authenticated = Arrays.equals(new_message_digest, decrypted_message_digest);  // proves that the digest received i$
+            if (authenticated){
+                authenticated = Arrays.equals(new_message_digest, decrypted_message_digest);  // proves that the digest received is correct
+            }
+
 
             // If not authenticated, stop connection
             if (!authenticated){
