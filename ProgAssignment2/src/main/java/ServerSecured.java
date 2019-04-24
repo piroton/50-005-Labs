@@ -20,8 +20,8 @@ import java.util.*;
 
 
 public class ServerSecured {
-    //    static String filedir = "D:/Github/50-005-Labs/prog-assignment-2/";
-    static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
+    static String filedir = "D:/github-repos/50-005-Labs/prog-assignment-2/";
+//    static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
     static String serverPublicKeyFile = "example.org.public.der";
     static String serverPrivateKeyFile = "example.org.private.der";
     static String caSignedFile = "example.org.crt";
@@ -68,74 +68,79 @@ public class ServerSecured {
 
         FileOutputStream fileOutputStream = null;
         BufferedOutputStream bufferedFileOutputStream = null;
-
+        boolean authenticated = false;
+        
+        System.out.print("Listening for connection...");
         try {
             welcomeSocket = new ServerSocket(port);
             connectionSocket = welcomeSocket.accept();
             fromClient = new DataInputStream(connectionSocket.getInputStream());
             toClient = new DataOutputStream(connectionSocket.getOutputStream());
             MessageDigest md = MessageDigest.getInstance("MD5");
-
+            System.out.println("Connection found.");
 
             while (!connectionSocket.isClosed()) {
 
-                // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
-                // Step 0
-                final String encoding_type = "UTF-8";
-
-
-                // Step 1 - Client sends nonce and message
-                System.out.println("Server - Step 1");
-                byte[] message_encrypt = new byte[100];
-                fromClient.readFully(message_encrypt);
-                String nonce_message = stringConvertAndTrim(message_encrypt);
-                String nonce = nonce_message.substring(0,3);
-
-
-                // Step 2 - Server sends encrypted nonce
-                byte[] nonce_bytes = padAndSendBytes(nonce);
-                byte[] encrypted_nonce_bytes = serverKeys.encryptPrivate(nonce_bytes);
-                try{
-                    toClient.write(encrypted_nonce_bytes);
-                } catch (Exception e){
-                    e.printStackTrace();
+                if (!authenticated){
+                    // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
+                    // Step 0
+                    final String encoding_type = "UTF-8";
+    
+    
+                    // Step 1 - Client sends nonce and message
+                    System.out.println("Server - Step 1");
+                    byte[] message_encrypt = new byte[100];
+                    fromClient.readFully(message_encrypt);
+                    String nonce_message = stringConvertAndTrim(message_encrypt);
+                    String nonce = nonce_message.substring(0,3);
+    
+    
+                    // Step 2 - Server sends encrypted nonce
+                    byte[] nonce_bytes = padAndSendBytes(nonce);
+                    byte[] encrypted_nonce_bytes = serverKeys.encryptPrivate(nonce_bytes);
+                    try{
+                        toClient.write(encrypted_nonce_bytes);
+                    } catch (Exception e){
+                        e.printStackTrace();
+                    }
+    
+    
+                    // Step 2 - Server sends certificate (signed cert is "example.org.crt", public key for cert is "cacse.crt")
+                    File file = new File(filedir + caSignedFile);
+                    byte[] bytesArray = new byte[(int) file.length()];  // length is 1265
+                    FileInputStream fis = new FileInputStream(file);
+                    fis.read(bytesArray);
+                    fis.close();
+                    toClient.write(bytesArray);
+    
+    
+                    // Step 3 - Client sends encrypted message (by server's public key) (length of byte array is 256)
+                    byte[] message_encrypted_server_public = new byte[256];
+                    fromClient.readFully(message_encrypted_server_public);
+                    String message_decrypted = stringConvertAndTrim(serverKeys.decrypt(message_encrypted_server_public, serverKeys.getPrivateKey()));
+                    // System.out.println(nonce_message.substring(3).equals(message_decrypted));  // checking if decrypted message tallies fr$
+    
+    
+                    // Step 4 - server sends encrypted digest of message (by server's private key)
+                    // MessageDigest md = MessageDigest.getInstance("MD5");
+                    byte[] message_digest = md.digest(padAndSendBytes(message_decrypted));
+                    byte[] encrypted_message_digest = serverKeys.encryptPrivate(message_digest);
+                    try{
+                        toClient.write(encrypted_message_digest);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+    
+    
+                    // Step 4 - server sends message
+                    try{
+                        toClient.write(padAndSendBytes(message_decrypted));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("authentication done");
+                    authenticated = true;
                 }
-
-
-                // Step 2 - Server sends certificate (signed cert is "example.org.crt", public key for cert is "cacse.crt")
-                File file = new File(filedir + caSignedFile);
-                byte[] bytesArray = new byte[(int) file.length()];  // length is 1265
-                FileInputStream fis = new FileInputStream(file);
-                fis.read(bytesArray);
-                fis.close();
-                toClient.write(bytesArray);
-
-
-                // Step 3 - Client sends encrypted message (by server's public key) (length of byte array is 256)
-                byte[] message_encrypted_server_public = new byte[256];
-                fromClient.readFully(message_encrypted_server_public);
-                String message_decrypted = stringConvertAndTrim(serverKeys.decrypt(message_encrypted_server_public, serverKeys.getPrivateKey()));
-                // System.out.println(nonce_message.substring(3).equals(message_decrypted));  // checking if decrypted message tallies fr$
-
-
-                // Step 4 - server sends encrypted digest of message (by server's private key)
-                // MessageDigest md = MessageDigest.getInstance("MD5");
-                byte[] message_digest = md.digest(padAndSendBytes(message_decrypted));
-                byte[] encrypted_message_digest = serverKeys.encryptPrivate(message_digest);
-                try{
-                    toClient.write(encrypted_message_digest);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-
-                // Step 4 - server sends message
-                try{
-                    toClient.write(padAndSendBytes(message_decrypted));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                System.out.println("authentication done");
 
 
                 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
@@ -164,13 +169,6 @@ public class ServerSecured {
                     X509EncodedKeySpec clientKeySpec = new X509EncodedKeySpec(clientPublicKeyBytes);
                     clientPublicKey = pubkf.generatePublic(clientKeySpec);
                     System.out.println("Done.");
-    
-                    int newPacket = fromClient.readInt();
-                    if (newPacket == SEND_TEST_MESSAGE) {
-                        byte[] replyMessage = serverKeys.encryptExternalRSA("Hi".getBytes(), clientPublicKey);
-                        toClient.writeInt(replyMessage.length);
-                        toClient.write(replyMessage);
-                    }
                 }
 
                 if (packetType == SEND_SESSION_KEY) {
@@ -193,46 +191,56 @@ public class ServerSecured {
                 if (packetType == FILE_HEADER_PACKET) {
 
 
-                    System.out.println("Receiving file...");
+                    System.out.print("Receiving file header...");
 
                     int numBytes = fromClient.readInt();
-                    byte[] filename = new byte[numBytes];
+                    byte[] encryptedFilename = new byte[numBytes];
                     // Must use read fully!
                     // See: https://stackoverflow.com/questions/25897627/datainputstream-read-vs-datainputstream-readfully
-                    fromClient.readFully(filename, 0, numBytes);
-
-                    fileOutputStream = new FileOutputStream("recv_" + new String(filename, 0, numBytes));
+                    fromClient.readFully(encryptedFilename, 0, numBytes);
+                    byte[] filename = decryptChunk(encryptedFilename);
+                    fileOutputStream = new FileOutputStream(filedir+"recv_" + new String(filename));
                     bufferedFileOutputStream = new BufferedOutputStream(fileOutputStream);
+                    
+                    System.out.println("Done");
 
 
                 } else if (packetType == FILE_DATA_PACKET) {
                     // If the packet is for transferring a chunk of the file
-
+    
+//                    System.out.println("Receiving file...");
                     int numBytes = fromClient.readInt();
                     byte[] encodedBlock = new byte[numBytes];
-                    fromClient.readFully(encodedBlock, 0, numBytes);
+                    fromClient.readFully(encodedBlock);
+                    int filebytes = fromClient.readInt();
                     byte[] decryptedBlock = decryptChunk(encodedBlock);
                     numBytes = decryptedBlock.length;
+//                    System.out.print(numBytes);
                     md.update(decryptedBlock);
 
 
-                    if (numBytes > 0)
+                    if (filebytes > 0)
                         bufferedFileOutputStream.write(decryptedBlock, 0, numBytes);
 
-                    if (numBytes < 117) {
+                    if (filebytes < 117) {
+                        System.out.println("File Ended, verifying now");
                         // generate Digest, check against sent digest
                         byte[] digest = md.digest();
-                        int digestLength = fromClient.readInt();
+                        String digested = Base64.getEncoder().encodeToString(digest);
                         int digestPacket = fromClient.readInt();
+                        int digestLength = fromClient.readInt();
 
                         if (digestPacket == FILE_DIGEST_PACKET) {
                             System.out.print("Verifying file...");
                             byte[] codedChecksum = new byte[digestLength];
                             fromClient.readFully(codedChecksum, 0, digestLength);
                             byte[] checksum = decryptChunk(codedChecksum);
+                            String compare = Base64.getEncoder().encodeToString(checksum);
 
-                            if (checksum == digest) {
+                            if (compare.equals(digested)) {
                                 toClient.writeInt(OK_PACKET);
+                            } else {
+                                toClient.writeInt(STOP_PACKET);
                             }
                             System.out.println("Done.");
                         }
@@ -245,6 +253,7 @@ public class ServerSecured {
                         toClient.close();
                         connectionSocket.close();
                         modeHasBeenSet = false;
+                        
                     }
                 }
             }
@@ -262,8 +271,9 @@ public class ServerSecured {
         // CP-1
         byte[] partiallyDecoded, plainBytes = null;
         if (MODE == 1) {
-            partiallyDecoded = serverKeys.decrypt(encrypted, serverKeys.getPrivateKey());
-            plainBytes = serverKeys.decrypt(partiallyDecoded, clientPublicKey);
+            plainBytes = serverKeys.decrypt(encrypted, serverKeys.getPrivateKey());
+//            plainBytes = serverKeys.decrypt(partiallyDecoded, clientPublicKey);
+//            System.out.println(new String(plainBytes));
         }
         // CP-2
         if (MODE == 2) {
@@ -282,19 +292,20 @@ public class ServerSecured {
         return output;
     }
     
-    static byte[] receiveChunksMerge(int totalBytes, int stopPacket,
+    static byte[] receiveChunksMerge(int fullChunkSize, int stopPacket,
                                      DataInputStream incoming) throws Exception{
-        ByteArrayOutputStream incomingData = new ByteArrayOutputStream();
+        ByteArrayOutputStream outputData = new ByteArrayOutputStream();
         while (incoming.readInt() != stopPacket){
             int datasize = incoming.readInt();
             byte[] data = new byte[datasize];
             incoming.readFully(data);
-            data = serverKeys.decrypt(data, serverKeys.getPrivateKey());
-            incomingData.write(data);
+            byte[] output = new byte[fullChunkSize];
+            output = serverKeys.decrypt(data, serverKeys.getPrivateKey());
+            outputData.write(output);
         }
-        byte[] data = incomingData.toByteArray();
-        incomingData.close();
-        return data;
+        byte[] allChunks = outputData.toByteArray();
+        outputData.close();
+        return allChunks;
     }
 
     // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
