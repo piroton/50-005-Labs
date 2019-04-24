@@ -14,8 +14,8 @@ import java.security.cert.*;
  */
 
 public class ClientSecured {
-    static String filedir = "D:/github-repos/50-005-Labs/prog-assignment-2/";
-    //    static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
+    // static String filedir = "D:/github-repos/50-005-Labs/prog-assignment-2/";
+    static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
     static String clientPublicKeyFile = "clientpublic.der";
     static String clientPrivateKeyFile = "clientkey.der";
     static String ca_public_key = "cacse.crt";
@@ -53,7 +53,7 @@ public class ClientSecured {
     /**
      * MODE: Set this to set the type of cryptography used by the file upload function.
      */
-    private final static int MODE = 2;
+    private final static int MODE = 1;
     
     
     static RSAKeyHelper clientKeys;
@@ -89,18 +89,7 @@ public class ClientSecured {
             clientSocket = new Socket(serverAddress, port);
             toServer = new DataOutputStream(clientSocket.getOutputStream());
             fromServer = new DataInputStream(clientSocket.getInputStream());
-            
-            // TODO: Request Encrypted Identity with Nonce
-            // TODO: Store Reply Nonce
-            // TODO: Store Identity
-            // TODO: Request Signed Certificate with Encrypted Digest
-            // TODO: Receive with Nonce, check Nonce against schema
-            // TODO: Open certifying authority cert (cacse.crt) and decrypt with public key to verify
-            // TODO: Open Signed Certificate and extract public key
-            // TODO: Decrypt Message Digest and verify Message Digest
-            // TODO: If all is well, continue; else, close socket
-            
-            
+
             // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication START
             /**
              in order:
@@ -130,7 +119,8 @@ public class ClientSecured {
             
             // Step 1 - send message and nonce
             final String message = "HALLO THIS IS PATRICK";
-            final int nonce = 100;
+            // final int nonce = 100;
+            final int nonce = (int) (Math.random() * (900 - 100)) + 100;
             
             System.out.println("Client - Step 1");
             try {
@@ -174,7 +164,7 @@ public class ClientSecured {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-//            System.out.println(Arrays.toString(message_encrypted_server_public));
+            // System.out.println(Arrays.toString(message_encrypted_server_public));
             
             
             // Step 4 - server sends encrypted digest of message (by server's private key) (length of encrypted digest is 256)
@@ -188,9 +178,13 @@ public class ClientSecured {
             byte[] message_server = new byte[100];
             fromServer.readFully(message_server);
             byte[] new_message_digest = md.digest(message_server);
-            // System.out.println(Arrays.equals(new_message_digest, decrypted_message_digest));  // proves that the digest received i$
-            
-            
+            boolean authenticated = Arrays.equals(new_message_digest, decrypted_message_digest);  // proves that the digest received i$
+
+            // If not authenticated, stop connection
+            if (!authenticated){
+                return;
+            }
+
             // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ The Authentication END
             
             

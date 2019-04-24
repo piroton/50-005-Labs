@@ -20,7 +20,7 @@ import java.util.*;
 
 
 public class ServerSecured {
-//    static String filedir = "D:/github-repos/50-005-Labs/prog-assignment-2/";
+    // static String filedir = "D:/github-repos/50-005-Labs/prog-assignment-2/";
     static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
     static String serverPublicKeyFile = "example.org.public.der";
     static String serverPrivateKeyFile = "example.org.private.der";
@@ -140,6 +140,11 @@ public class ServerSecured {
                     }
                     System.out.println("authentication done");
                     authenticated = true;
+
+                    // if not authenticated, stop connection
+                    if (!authenticated){
+                        break;
+                    }
                 }
 
 
