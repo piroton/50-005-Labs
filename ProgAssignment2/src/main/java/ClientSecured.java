@@ -19,8 +19,10 @@ public class ClientSecured {
     static String clientPublicKeyFile = "clientpublic.der";
     static String clientPrivateKeyFile = "clientkey.der";
     static String ca_public_key = "cacse.crt";
-    static String filename = "f1.png";
+    static String filename = "sendomu.png";
     static String fullfilename = filedir + filename;
+    static String serverAddress = "localhost";
+//    static String serverAddress = "10.12.247.247";
     
     final static int CP_1_PACKET = 501;
     final static int CP_2_PACKET = 502;
@@ -51,7 +53,7 @@ public class ClientSecured {
     /**
      * MODE: Set this to set the type of cryptography used by the file upload function.
      */
-    private final static int MODE = 1;
+    private final static int MODE = 2;
     
     
     static RSAKeyHelper clientKeys;
@@ -62,8 +64,6 @@ public class ClientSecured {
     public static void main(String[] args) {
         
         if (args.length > 0) filename = args[0];
-        
-        String serverAddress = "localhost";
         if (args.length > 1) filename = args[1];
         
         int port = 4321;
@@ -240,11 +240,13 @@ public class ClientSecured {
                 System.out.println("done");
                 
                 System.out.print("Transmitting Session Key To Server...");
+                toServer.writeInt(SEND_SESSION_KEY);
                 byte[] plainKey = sessionKey.getSharedKey().getEncoded();
-                ByteArrayInputStream keyStream = new ByteArrayInputStream(plainKey);
-                sendChunksWithHeader(keyStream, 117, 128, SEND_SESSION_KEY, toServer);
-                toServer.writeInt(STOP_PACKET);
-                System.out.println("Done.");
+                
+                toServer.writeInt(plainKey.length);
+                byte[] encodedKey = clientKeys.encryptExternalRSA(plainKey, serverPublicKey);
+                toServer.writeInt(encodedKey.length);
+                toServer.write(encodedKey);
                 
                 System.out.print("Checking if Server has the correct key...");
                 toServer.writeInt(SEND_TEST_MESSAGE);
@@ -252,7 +254,8 @@ public class ClientSecured {
                 byte[] encoded = new byte[replyLength];
                 fromServer.read(encoded);
                 byte[] replyMessage = sessionKey.decodeBytes(encoded);
-                if (replyMessage != "Hi".getBytes()) {
+                String reply = byteToStr(replyMessage);
+                if (!reply.equals("F")) {
                     System.out.println("Server does not have key! Error!");
                 }
             }
@@ -363,6 +366,7 @@ public class ClientSecured {
                                      int dataPacketType, DataOutputStream outgoing) throws Exception {
         byte[] chunk = new byte[chunkSize];
         outgoing.writeInt(totalBytes);
+        System.out.println(totalBytes+ "bytes");
         int bytesRead;
         for (boolean streamEnded = false; !streamEnded; ) {
             bytesRead = rawdata.read(chunk);

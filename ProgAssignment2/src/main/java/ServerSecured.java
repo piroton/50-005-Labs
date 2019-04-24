@@ -173,17 +173,30 @@ public class ServerSecured {
 
                 if (packetType == SEND_SESSION_KEY) {
                     System.out.print("Receiving session key from client...");
+                    
                     int keyLen = fromClient.readInt();
-                    byte[] plainKeyBytes = receiveChunksMerge(keyLen, STOP_PACKET, fromClient);
+                    System.out.println(keyLen);
+                    int encodedKeyLen = fromClient.readInt();
+                    byte[] encodedKey = new byte[encodedKeyLen];
+                    fromClient.readFully(encodedKey);
+                    
+//                    System.out.println(len);
+                    byte[] plainKeyBytes = serverKeys.decrypt(encodedKey, serverKeys.getPrivateKey());
+//                    System.out.println(byteToStr(plainKeyBytes));
+//                    System.arraycopy(keyp1, 0, plainKeyBytes, 0, 64);
+//                    System.arraycopy(keyp2, 0, plainKeyBytes, 64, 64);
                     SecretKey sentKey = new SecretKeySpec(plainKeyBytes, 0, plainKeyBytes.length, "AES");
                     sessionKey.setSharedKey(sentKey, keyLen);
-
-                    int newPacket = fromClient.readInt();
-                    if (newPacket == SEND_TEST_MESSAGE) {
-                        byte[] replyMessage = sessionKey.encodeBytes("Hi".getBytes());
-                        toClient.writeInt(replyMessage.length);
-                        toClient.write(replyMessage);
+                    System.out.println("Done.");
+                    
+                    int callPacket = fromClient.readInt();
+                    if (callPacket == SEND_TEST_MESSAGE){
+                        byte[] testMessage = strToByte("F");
+                        byte[] encodedTest = sessionKey.encodeBytes(testMessage);
+                        toClient.writeInt(encodedTest.length);
+                        toClient.write(encodedTest);
                     }
+                    
 
                 }
 
