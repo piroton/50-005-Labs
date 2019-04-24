@@ -20,8 +20,8 @@ import java.util.*;
 
 
 public class ServerSecured {
-    static String filedir = "D:/github-repos/50-005-Labs/prog-assignment-2/";
-//    static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
+//    static String filedir = "D:/github-repos/50-005-Labs/prog-assignment-2/";
+    static String filedir = "/home/xubuntu/Desktop/50-005-Labs/prog-assignment-2/";  // for junde
     static String serverPublicKeyFile = "example.org.public.der";
     static String serverPrivateKeyFile = "example.org.private.der";
     static String caSignedFile = "example.org.crt";
